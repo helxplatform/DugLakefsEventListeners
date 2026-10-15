@@ -14,7 +14,7 @@ Content-Type: application/json
 }
 ###
 
-POST http://127.0.0.1:8001/invoke_airflow_with_diff
+POST http://127.0.0.1:8555/invoke_airflow_with_diff
 Content-Type: application/json
 
 {
@@ -28,4 +28,33 @@ Content-Type: application/json
   "commit_id" : "620eb527c6b4c4359a79ed58b2fc83c76490e910aa39288e9bc5bc1c25ba3b0d"
 }
 
+###
+POST http://t111.apps.renci.org/invoke_airflow_with_diff
+Content-Type: application/json
 
+{
+  "event_type" : "post-create-tag",
+  "event_time" : "2024-08-08T00:09:53Z",
+  "action_name": "annotate_and_index",
+  "hook_id": "no_temp",
+  "repository_id": "bacpac-test",
+  "source_ref" : "620eb527c6b4c4359a79ed58b2fc83c76490e910aa39288e9bc5bc1c25ba3b0d",
+  "tag_id" : "t1",
+  "commit_id" : "620eb527c6b4c4359a79ed58b2fc83c76490e910aa39288e9bc5bc1c25ba3b0d"
+}
+
+###
+POST http://127.0.0.1:8001/relay?dag_id=test_dag
+Content-Type: application/json
+
+{"event_type":"post-commit",
+  "event_time":"2026-10-15T15:38:09Z",
+  "action_name":"NewCommit2Airflow",
+  "hook_id":"hook2",
+  "repository_id":"heal-cdes2",
+  "branch_id":"main",
+  "source_ref":"42c897c787cafbf07c41a50e8ac9627fb85f2b2342ab9e6e066718f6eaab7f2a",
+  "commit_id":"42c897c787cafbf07c41a50e8ac9627fb85f2b2342ab9e6e066718f6eaab7f2a",
+  "commit_message":"action update",
+  "committer":"admin2"
+}
