@@ -44,14 +44,14 @@ Content-Type: application/json
 }
 
 ###
-POST http://127.0.0.1:8001/relay?dag_id=test_dag
+POST http://127.0.0.1:8701/relay?dag_id=test_dag
 Content-Type: application/json
 
 {"event_type":"post-commit",
   "event_time":"2026-10-15T15:38:09Z",
   "action_name":"NewCommit2Airflow",
   "hook_id":"hook2",
-  "repository_id":"heal-cdes2",
+  "repository_id":"test-repo",
   "branch_id":"main",
   "source_ref":"42c897c787cafbf07c41a50e8ac9627fb85f2b2342ab9e6e066718f6eaab7f2a",
   "commit_id":"42c897c787cafbf07c41a50e8ac9627fb85f2b2342ab9e6e066718f6eaab7f2a",
