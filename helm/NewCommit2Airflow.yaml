@@ -1,0 +1,12 @@
+name: NewCommit2Airflow
+description: none
+on:
+  post-commit:
+hooks:
+  - id: hook2
+    type: webhook
+    description: none
+    properties:
+      url: "http://duglakefseventlisteners-service.lakefs.svc.cluster.local:80/relay"
+      query_params:
+        dag_id: "annotate_and_index"
