@@ -1,11 +1,10 @@
-# Deploy the listener. Exposed so search-chart can gate the dependency.
-enabled: true
+# Default values for DugLakeFsEventListeners.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
 
 replicaCount: 1
 
 image:
-  # Built FROM the roger image so the airflow CLI and DB drivers match the
-  # deployment being triggered (see Dockerfile).
   repository: containers.renci.org/helxplatform/duglakefseventlisteners
   tag: ""            # defaults to .Chart.AppVersion
   pullPolicy: IfNotPresent
@@ -14,51 +13,29 @@ imagePullSecrets: []
 nameOverride: ""
 fullnameOverride: ""
 
-service:
-  type: ClusterIP
-  port: 8001
-
-airflow:
-  # The listener triggers via `airflow dags trigger`, which writes through
-  # the metadata DB rather than the REST API -- the FAB auth manager offers
-  # no token endpoint to authenticate against. So it needs the same
-  # connection string the scheduler uses.
-  metadataSecret:
-    name: ""                 # e.g. "search-metadata"; required
-    key: connection
-  home: /opt/airflow
-
-hook:
-  # Shared secret checked against the X-Roger-Token header. Must match
-  # ROGER_HOOK_TOKEN in the *lakeFS server's* environment, which is where
-  # the action's {{ ENV.ROGER_HOOK_TOKEN }} is resolved.
-  token: ""
-  # Or reference a secret you manage yourself.
-  existingSecret: ""
-  existingSecretKey: token
-
-dags:
-  # Any repository not listed falls through to this DAG.
-  default: annotate_and_index
-  # Repository -> DAG. KGX repos belong here if you ever want them wired;
-  # they are deliberately left out of the installed actions by default.
-  # map:
-  #   heal-mds-kgx: knowledge_graph_build
-  map: {}
-
-# One run per source commit; only used when an event carries no commit id.
-dedupMinutes: 0
-
-resources:
-  requests:
-    cpu: 50m
-    memory: 256Mi
-  limits:
-    cpu: 500m
-    memory: 1Gi
-
 podAnnotations: {}
 podLabels: {}
+
+Airflow:
+#  url: "http://heal-dev.apps.renci.org/airflow/api/v2"
+#  auth: "http://heal-dev.apps.renci.org/airflow/auth/token"
+  url: "http://yk-heal.apps.renci.org/airflow/api/v2/"
+  auth: "http://yk-heal.apps.renci.org/airflow/auth/token"
+
+
+service:
+  type: ClusterIP
+  port: 80
+
+
+# Additional volumes on the output Deployment definition.
+volumes: []
+
+# Additional volumeMounts on the output Deployment definition.
+volumeMounts: []
+
 nodeSelector: {}
+
 tolerations: []
+
 affinity: {}

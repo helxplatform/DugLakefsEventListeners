@@ -32,20 +32,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-      - name: Unit tests
-        run: |
-          pip install flask pytest
-          PYTHONPATH=src python -m pytest test -q
-
       - uses: azure/setup-helm@v4
       - name: Lint chart
         run: |
-          helm lint ${{ env.CHART_DIR }} \
-            --set airflow.metadataSecret.name=search-metadata \
-            --set hook.token=lint-only
+          helm lint ${{ env.CHART_DIR }}
 
       - name: Bump version
         id: ver
@@ -82,9 +72,6 @@ jobs:
           tags: |
             ${{ env.IMAGE }}:${{ steps.ver.outputs.version }}
             ${{ env.IMAGE }}:latest
-          # keep the Airflow CLI and DB drivers in step with the deployment
-          build-args: |
-            BASE_IMAGE=containers.renci.org/helxplatform/roger:develop
 
       - name: Package and push chart
         run: |

@@ -1,15 +1,15 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "listener.fullname" . }}
+  name: {{ .Release.Name }}
   namespace: {{ .Release.Namespace }}
   labels:
-    {{- include "listener.labels" . | nindent 4 }}
+    {{- include "DugLakeFsEventListeners.labels" . | nindent 4 }}
 spec:
   replicas: {{ .Values.replicaCount }}
   selector:
     matchLabels:
-      {{- include "listener.selectorLabels" . | nindent 6 }}
+      {{- include "DugLakeFsEventListeners.selectorLabels" . | nindent 6 }}
   template:
     metadata:
       {{- with .Values.podAnnotations }}
@@ -17,73 +17,28 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       labels:
-        {{- include "listener.labels" . | nindent 8 }}
-        {{- with .Values.podLabels }}
-        {{- toYaml . | nindent 8 }}
-        {{- end }}
+        {{- include "DugLakeFsEventListeners.labels" . | nindent 8 }}
     spec:
+      restartPolicy: Always
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       containers:
-        - name: listener
+        - name: pod-main
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
+          env:
+            - name: AIRFLOW_URL
+              value: {{ .Values.Airflow.url}}
+            - name: AIRFLOW_AUTH_URL
+              value: {{ .Values.Airflow.auth}}
+          envFrom:
+             - secretRef:
+                 name: airflow-creds
           ports:
             - name: http
               containerPort: 8001
               protocol: TCP
-          env:
-            - name: PORT
-              value: "8001"
-            - name: AIRFLOW_HOME
-              value: {{ .Values.airflow.home | quote }}
-            {{- if not .Values.airflow.metadataSecret.name }}
-            {{- fail "airflow.metadataSecret.name is required: the listener triggers via `airflow dags trigger`, which needs the metadata DB connection" }}
-            {{- end }}
-            # `airflow dags trigger` writes the DagRun through the metadata
-            # DB, so this is the credential that matters -- there is no API
-            # token involved.
-            - name: AIRFLOW__DATABASE__SQL_ALCHEMY_CONN
-              valueFrom:
-                secretKeyRef:
-                  name: {{ .Values.airflow.metadataSecret.name }}
-                  key: {{ .Values.airflow.metadataSecret.key }}
-            {{- if or .Values.hook.token .Values.hook.existingSecret }}
-            - name: ROGER_HOOK_TOKEN
-              valueFrom:
-                secretKeyRef:
-                  name: {{ include "listener.hookSecretName" . }}
-                  key: {{ .Values.hook.existingSecretKey }}
-            {{- end }}
-            - name: DEFAULT_DAG_ID
-              value: {{ .Values.dags.default | quote }}
-            - name: DAG_MAP
-              value: {{ .Values.dags.map | toJson | quote }}
-            - name: DEDUP_MINUTES
-              value: {{ .Values.dedupMinutes | quote }}
-          livenessProbe:
-            httpGet:
-              path: /healthz
-              port: http
-            periodSeconds: 20
-          readinessProbe:
-            httpGet:
-              path: /healthz
-              port: http
-            periodSeconds: 10
-          resources:
-            {{- toYaml .Values.resources | nindent 12 }}
-      {{- with .Values.nodeSelector }}
-      nodeSelector:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
-      {{- with .Values.tolerations }}
-      tolerations:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
-      {{- with .Values.affinity }}
-      affinity:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
+
+

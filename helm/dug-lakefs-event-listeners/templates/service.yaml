@@ -1,16 +1,18 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "listener.fullname" . }}
+  name: {{ .Release.Name }}-service
   namespace: {{ .Release.Namespace }}
   labels:
-    {{- include "listener.labels" . | nindent 4 }}
+    app: {{ template "DugLakeFsEventListeners.fullname" . }}
+    chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
+    release: "{{ .Release.Name }}"
 spec:
   type: {{ .Values.service.type }}
   ports:
     - port: {{ .Values.service.port }}
-      targetPort: http
+      targetPort: 8001
       protocol: TCP
       name: http
   selector:
-    {{- include "listener.selectorLabels" . | nindent 4 }}
+    {{- include "DugLakeFsEventListeners.selectorLabels" . | nindent 4 }}
