@@ -33,9 +33,16 @@ spec:
               value: {{ .Values.Airflow.url}}
             - name: AIRFLOW_AUTH_URL
               value: {{ .Values.Airflow.auth}}
-          envFrom:
-             - secretRef:
-                 name: airflow-creds
+            - name: AIRFLOW_USER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.Airflow.secret.name }}
+                  key: {{ .Values.Airflow.secret.userKey }}
+            - name: AIRFLOW_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.Airflow.secret.name }}
+                  key: {{ .Values.Airflow.secret.passwordKey }}
           ports:
             - name: http
               containerPort: 8001
