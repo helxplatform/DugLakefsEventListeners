@@ -30,6 +30,11 @@ spec:
           env:
             - name: AIRFLOW_URL
               value: {{ .Values.Airflow.url}}
+            - name: AIRFLOW_AUTH_URL
+              value: {{ .Values.Airflow.auth}}
+          envFrom:
+             - secretRef:
+                 name: airflow-creds
           command:
             - sh
             - -c
