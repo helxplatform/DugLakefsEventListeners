@@ -1,0 +1,102 @@
+# On merge to main: bump patch version (chart version + appVersion), commit it
+# back, tag vX.Y.Z, then publish to RENCI's Harbor:
+#   - image  containers.renci.org/helxplatform/duglakefseventlisteners:X.Y.Z (+latest)
+#   - chart  oci://containers.renci.org/helxplatform/dug-lakefs-event-listeners
+# and create a GitHub release. search-chart depends on the chart by OCI
+# reference, so bump its dependency after this finishes.
+name: release image and chart
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# one release at a time so version bumps can't race
+concurrency: release
+
+permissions:
+  contents: write # push bump commit + tag, create release
+
+env:
+  REGISTRY: containers.renci.org
+  IMAGE: containers.renci.org/helxplatform/duglakefseventlisteners
+  CHART_DIR: helm/dug-lakefs-event-listeners
+  CHART_REPO: oci://containers.renci.org/helxplatform
+
+jobs:
+  release:
+    # the bump commit is pushed with GITHUB_TOKEN (never retriggers workflows);
+    # the [skip ci] guard also covers PAT-based pushes
+    if: ${{ !contains(github.event.head_commit.message, '[skip ci]') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Unit tests
+        run: |
+          pip install flask pytest
+          PYTHONPATH=src python -m pytest test -q
+
+      - uses: azure/setup-helm@v4
+      - name: Lint chart
+        run: |
+          helm lint ${{ env.CHART_DIR }} \
+            --set airflow.metadataSecret.name=search-metadata \
+            --set hook.token=lint-only
+
+      - name: Bump version
+        id: ver
+        run: |
+          F=${{ env.CHART_DIR }}/Chart.yaml
+          CUR=$(awk '/^version:/ {print $2}' "$F")
+          NEW="${CUR%.*}.$(( ${CUR##*.} + 1 ))"
+          # skip tags that already exist (e.g. manual re-run after a failed publish)
+          while git ls-remote --exit-code --tags origin "v$NEW" >/dev/null 2>&1; do
+            NEW="${NEW%.*}.$(( ${NEW##*.} + 1 ))"
+          done
+          sed -i -E "s/^version:.*/version: $NEW/; s/^appVersion:.*/appVersion: \"$NEW\"/" "$F"
+          echo "version=$NEW" >> "$GITHUB_OUTPUT"
+
+      - name: Commit bump and tag
+        run: |
+          V=${{ steps.ver.outputs.version }}
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -am "chore: release v$V [skip ci]"
+          git tag "v$V"
+          git push origin HEAD:main "v$V"
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ secrets.CONTAINERHUB_USERNAME }}
+          password: ${{ secrets.CONTAINERHUB_TOKEN }}
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ env.IMAGE }}:${{ steps.ver.outputs.version }}
+            ${{ env.IMAGE }}:latest
+          # keep the Airflow CLI and DB drivers in step with the deployment
+          build-args: |
+            BASE_IMAGE=containers.renci.org/helxplatform/roger:develop
+
+      - name: Package and push chart
+        run: |
+          helm package ${{ env.CHART_DIR }} -d dist   # Chart.yaml already bumped
+          helm registry login ${{ env.REGISTRY }} \
+            --username '${{ secrets.CONTAINERHUB_USERNAME }}' \
+            --password '${{ secrets.CONTAINERHUB_TOKEN }}'
+          helm push dist/*.tgz ${{ env.CHART_REPO }}
+
+      - name: GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "v${{ steps.ver.outputs.version }}" dist/*.tgz \
+            --title "v${{ steps.ver.outputs.version }}" --generate-notes

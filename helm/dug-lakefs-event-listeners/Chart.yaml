@@ -1,0 +1,14 @@
+apiVersion: v2
+# lowercase: OCI references must be lowercase, and this chart is pushed to
+# oci://containers.renci.org/helxplatform for search-chart to depend on.
+name: dug-lakefs-event-listeners
+description: Turns lakeFS commit/merge events into Airflow DAG runs for roger.
+type: application
+# chart version -- bump on template/values changes
+version: 0.1.0
+# the listener image tag; tracks the app, not the chart
+appVersion: "0.1.0"
+keywords:
+  - lakefs
+  - airflow
+  - roger
