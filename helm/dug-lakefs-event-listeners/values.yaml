@@ -21,6 +21,11 @@ Airflow:
 #  auth: "http://heal-dev.apps.renci.org/airflow/auth/token"
   url: "http://yk-heal.apps.renci.org/airflow/api/v2/"
   auth: "http://yk-heal.apps.renci.org/airflow/auth/token"
+  # Existing Secret holding the Airflow login (not created by this chart).
+  secret:
+    name: airflow-creds
+    userKey: AIRFLOW_USER
+    passwordKey: AIRFLOW_PASSWORD
 
 
 service:
