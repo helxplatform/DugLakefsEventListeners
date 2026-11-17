@@ -1,0 +1,46 @@
+# Default values for DugLakeFsEventListeners.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+replicaCount: 1
+
+image:
+  repository: containers.renci.org/helxplatform/duglakefseventlisteners
+  tag: ""            # defaults to .Chart.AppVersion
+  pullPolicy: IfNotPresent
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+podAnnotations: {}
+podLabels: {}
+
+Airflow:
+#  url: "http://heal-dev.apps.renci.org/airflow/api/v2"
+#  auth: "http://heal-dev.apps.renci.org/airflow/auth/token"
+  url: "http://yk-heal.apps.renci.org/airflow/api/v2/"
+  auth: "http://yk-heal.apps.renci.org/airflow/auth/token"
+  # Existing Secret holding the Airflow login (not created by this chart).
+  secret:
+    name: airflow-creds
+    userKey: AIRFLOW_USER
+    passwordKey: AIRFLOW_PASSWORD
+
+
+service:
+  type: ClusterIP
+  port: 80
+
+
+# Additional volumes on the output Deployment definition.
+volumes: []
+
+# Additional volumeMounts on the output Deployment definition.
+volumeMounts: []
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}

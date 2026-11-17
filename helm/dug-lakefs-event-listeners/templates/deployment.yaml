@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "DugLakeFsEventListeners.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "DugLakeFsEventListeners.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "DugLakeFsEventListeners.labels" . | nindent 8 }}
+    spec:
+      restartPolicy: Always
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: pod-main
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          env:
+            - name: AIRFLOW_URL
+              value: {{ .Values.Airflow.url}}
+            - name: AIRFLOW_AUTH_URL
+              value: {{ .Values.Airflow.auth}}
+            - name: AIRFLOW_USER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.Airflow.secret.name }}
+                  key: {{ .Values.Airflow.secret.userKey }}
+            - name: AIRFLOW_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.Airflow.secret.name }}
+                  key: {{ .Values.Airflow.secret.passwordKey }}
+          ports:
+            - name: http
+              containerPort: 8001
+              protocol: TCP
+
+
