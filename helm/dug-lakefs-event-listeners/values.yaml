@@ -4,6 +4,10 @@
 
 replicaCount: 1
 
+image:
+  repository: containers.renci.org/helxplatform/duglakefseventlisteners
+  tag: ""            # defaults to .Chart.AppVersion
+  pullPolicy: IfNotPresent
 
 imagePullSecrets: []
 nameOverride: ""
@@ -19,11 +23,6 @@ Airflow:
   auth: "http://yk-heal.apps.renci.org/airflow/auth/token"
 
 
-DugLakefsEventListeners:
-  git_commit_id: null
-  branch: "update-to-v2"
-
-
 service:
   type: ClusterIP
   port: 80
@@ -34,10 +33,6 @@ volumes: []
 
 # Additional volumeMounts on the output Deployment definition.
 volumeMounts: []
-
-
-storage:
-  size: 32M
 
 nodeSelector: {}
 
