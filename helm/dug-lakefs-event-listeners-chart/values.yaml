@@ -30,6 +30,7 @@ securityContext:
 podAnnotations: {}
 podLabels: {}
 
+# url/auth go through tpl, e.g. "http://{{ .Release.Name }}-api-server:8080/api/v2/" as a subchart
 Airflow:
 #  url: "http://heal-dev.apps.renci.org/airflow/api/v2"
 #  auth: "http://heal-dev.apps.renci.org/airflow/auth/token"
