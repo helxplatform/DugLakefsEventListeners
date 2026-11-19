@@ -1,7 +1,7 @@
 # On merge to main: bump patch version (chart version + appVersion), commit it
 # back, tag vX.Y.Z, then publish to RENCI's Harbor:
-#   - image  containers.renci.org/helxplatform/duglakefseventlisteners:X.Y.Z (+latest)
-#   - chart  oci://containers.renci.org/helxplatform/dug-lakefs-event-listeners
+#   - image  containers.renci.org/helxplatform/dug-lakefs-event-listeners:X.Y.Z (+latest)
+#   - chart  oci://containers.renci.org/helxplatform/dug-lakefs-event-listeners-chart
 # and create a GitHub release. search-chart depends on the chart by OCI
 # reference, so bump its dependency after this finishes.
 name: release image and chart
@@ -19,8 +19,8 @@ permissions:
 
 env:
   REGISTRY: containers.renci.org
-  IMAGE: containers.renci.org/helxplatform/duglakefseventlisteners
-  CHART_DIR: helm/dug-lakefs-event-listeners
+  IMAGE: containers.renci.org/helxplatform/dug-lakefs-event-listeners
+  CHART_DIR: helm/dug-lakefs-event-listeners-chart
   CHART_REPO: oci://containers.renci.org/helxplatform
 
 jobs:
@@ -30,16 +30,38 @@ jobs:
     if: ${{ !contains(github.event.head_commit.message, '[skip ci]') }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           # tip of main, not the trigger sha: queued runs must build on the
           # previous run's bump commit or the push below is rejected
           ref: main
 
-      - uses: azure/setup-helm@v4
+      - uses: azure/setup-helm@v5
       - name: Lint chart
         run: |
           helm lint ${{ env.CHART_DIR }}
+
+      # Scans run before the bump/tag so a finding can't leave a tag with
+      # nothing published. Unfixed OS CVEs are ignored; they can't be acted on.
+      - name: Scan repo (dependencies, secrets, Dockerfile, chart)
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          scan-type: fs
+          scanners: vuln,misconfig,secret
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: "1"
+
+      - name: Build image for scanning
+        run: docker build -t scan:local .
+
+      - name: Scan image
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: scan:local
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: "1"
 
       - name: Bump version
         id: ver
@@ -63,19 +85,18 @@ jobs:
           git tag "v$V"
           git push --atomic origin HEAD:main "v$V"   # no orphan tag if main moved
 
-      - uses: docker/login-action@v3
+      - uses: docker/login-action@v4
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ secrets.CONTAINERHUB_USERNAME }}
           password: ${{ secrets.CONTAINERHUB_TOKEN }}
 
-      - uses: docker/build-push-action@v6
-        with:
-          context: .
-          push: true
-          tags: |
-            ${{ env.IMAGE }}:${{ steps.ver.outputs.version }}
-            ${{ env.IMAGE }}:latest
+      - name: Push image
+        run: |
+          for t in ${{ steps.ver.outputs.version }} latest; do
+            docker tag scan:local ${{ env.IMAGE }}:$t
+            docker push ${{ env.IMAGE }}:$t
+          done
 
       - name: Package and push chart
         run: |

@@ -1,6 +1,6 @@
 apiVersion: v2
 # lowercase: OCI refs must be lowercase; CI bumps version/appVersion on merge to main
-name: dug-lakefs-event-listeners
+name: dug-lakefs-event-listeners-chart
 description: Relays lakeFS events to Airflow DAG runs.
 
 # A chart can be either an 'application' or a 'library' chart.

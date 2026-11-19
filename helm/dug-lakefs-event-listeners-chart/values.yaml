@@ -5,13 +5,27 @@
 replicaCount: 1
 
 image:
-  repository: containers.renci.org/helxplatform/duglakefseventlisteners
+  repository: containers.renci.org/helxplatform/dug-lakefs-event-listeners
   tag: ""            # defaults to .Chart.AppVersion
   pullPolicy: IfNotPresent
 
 imagePullSecrets: []
-nameOverride: ""
+# keeps pod selector labels identical to the original chart, which a release upgrade cannot change
+nameOverride: "DugLakeFsEventListeners"
 fullnameOverride: ""
+
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 10001
+  seccompProfile:
+    type: RuntimeDefault
+
+# Not read-only: the app writes logs.log and its last_commit_id state next
+# to the code (see .trivyignore).
+securityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop: [ALL]
 
 podAnnotations: {}
 podLabels: {}
