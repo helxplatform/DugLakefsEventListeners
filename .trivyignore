@@ -1,0 +1,3 @@
+# main.py writes logs.log and data/*.json next to the code; needs a writable root fs
+# until it logs to stdout and keeps state elsewhere.
+KSV-0014

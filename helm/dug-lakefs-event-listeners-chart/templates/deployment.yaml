@@ -20,6 +20,8 @@ spec:
         {{- include "DugLakeFsEventListeners.labels" . | nindent 8 }}
     spec:
       restartPolicy: Always
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
@@ -28,6 +30,8 @@ spec:
         - name: pod-main
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
           env:
             - name: AIRFLOW_URL
               value: {{ .Values.Airflow.url}}

@@ -41,6 +41,28 @@ jobs:
         run: |
           helm lint ${{ env.CHART_DIR }}
 
+      # Scans run before the bump/tag so a finding can't leave a tag with
+      # nothing published. Unfixed OS CVEs are ignored; they can't be acted on.
+      - name: Scan repo (dependencies, secrets, Dockerfile, chart)
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          scan-type: fs
+          scanners: vuln,misconfig,secret
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: "1"
+
+      - name: Build image for scanning
+        run: docker build -t scan:local .
+
+      - name: Scan image
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: scan:local
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: "1"
+
       - name: Bump version
         id: ver
         run: |
@@ -69,13 +91,12 @@ jobs:
           username: ${{ secrets.CONTAINERHUB_USERNAME }}
           password: ${{ secrets.CONTAINERHUB_TOKEN }}
 
-      - uses: docker/build-push-action@v7
-        with:
-          context: .
-          push: true
-          tags: |
-            ${{ env.IMAGE }}:${{ steps.ver.outputs.version }}
-            ${{ env.IMAGE }}:latest
+      - name: Push image
+        run: |
+          for t in ${{ steps.ver.outputs.version }} latest; do
+            docker tag scan:local ${{ env.IMAGE }}:$t
+            docker push ${{ env.IMAGE }}:$t
+          done
 
       - name: Package and push chart
         run: |
