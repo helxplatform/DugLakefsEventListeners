@@ -31,6 +31,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          # tip of main, not the trigger sha: queued runs must build on the
+          # previous run's bump commit or the push below is rejected
+          ref: main
 
       - uses: azure/setup-helm@v4
       - name: Lint chart
@@ -57,7 +61,7 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git commit -am "chore: release v$V [skip ci]"
           git tag "v$V"
-          git push origin HEAD:main "v$V"
+          git push --atomic origin HEAD:main "v$V"   # no orphan tag if main moved
 
       - uses: docker/login-action@v3
         with:
