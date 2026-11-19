@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ .Release.Name }}
+  name: {{ include "DugLakeFsEventListeners.fullname" . }}
   namespace: {{ .Release.Namespace }}
   labels:
     {{- include "DugLakeFsEventListeners.labels" . | nindent 4 }}
@@ -34,9 +34,9 @@ spec:
             {{- toYaml .Values.securityContext | nindent 12 }}
           env:
             - name: AIRFLOW_URL
-              value: {{ .Values.Airflow.url}}
+              value: {{ tpl .Values.Airflow.url . | quote }}
             - name: AIRFLOW_AUTH_URL
-              value: {{ .Values.Airflow.auth}}
+              value: {{ tpl .Values.Airflow.auth . | quote }}
             - name: AIRFLOW_USER
               valueFrom:
                 secretKeyRef:
