@@ -1,7 +1,7 @@
 # On merge to main: bump patch version (chart version + appVersion), commit it
 # back, tag vX.Y.Z, then publish to RENCI's Harbor:
-#   - image  containers.renci.org/helxplatform/duglakefseventlisteners:X.Y.Z (+latest)
-#   - chart  oci://containers.renci.org/helxplatform/dug-lakefs-event-listeners
+#   - image  containers.renci.org/helxplatform/dug-lakefs-event-listeners:X.Y.Z (+latest)
+#   - chart  oci://containers.renci.org/helxplatform/dug-lakefs-event-listeners-chart
 # and create a GitHub release. search-chart depends on the chart by OCI
 # reference, so bump its dependency after this finishes.
 name: release image and chart
@@ -19,8 +19,8 @@ permissions:
 
 env:
   REGISTRY: containers.renci.org
-  IMAGE: containers.renci.org/helxplatform/duglakefseventlisteners
-  CHART_DIR: helm/dug-lakefs-event-listeners
+  IMAGE: containers.renci.org/helxplatform/dug-lakefs-event-listeners
+  CHART_DIR: helm/dug-lakefs-event-listeners-chart
   CHART_REPO: oci://containers.renci.org/helxplatform
 
 jobs:
